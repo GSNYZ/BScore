@@ -111,7 +111,6 @@
     .flash{padding:8px 12px;border-radius:var(--border-radius-md);font-size:12px;margin-bottom:12px;display:none;background:#EEEDFE;color:#3C3489}
     .empty{padding:2.5rem;text-align:center;font-size:13px;color:var(--color-text-tertiary)}
     
-    /* สไตล์เพิ่มเติมสำหรับสถานะกำลังโหลดข้อมูล */
     .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 9999; color: white; font-size: 16px; border-radius: inherit; }
     .loading-box { background: var(--color-background-primary); color: var(--color-text-primary); padding: 20px 40px; border-radius: var(--border-radius-lg); box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; }
   </style>
@@ -214,7 +213,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
-// นำ URL ของ Web App ที่ได้จากการ Deploy ใน Google Apps Script มาใส่ตรงนี้ครับ
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzwTpRUe9srWEjwaqgQXEy0ra3tNo4Pa6rzPwyBurIF6eLcBuBMpz4JSsX9oGv1mu_xpw/exec"; 
 
 let db={players:[],records:[]};
@@ -232,10 +230,12 @@ async function loadDB(){
   try{
     const response = await fetch(WEB_APP_URL);
     if(response.ok) {
-      db = await response.json();
+      const resData = await response.json();
+      db.players = resData.players || [];
+      db.records = resData.records || [];
     }
   }catch(e){
-    console.error("โหลดข้อมูลจาก Google Sheets ไม่สำเร็จ ลิงก์อาจไม่ถูกต้อง:", e);
+    console.error("โหลดข้อมูลจาก Google Sheets ไม่สำเร็จ:", e);
   }
   toggleLoading(false);
   init();
@@ -246,12 +246,29 @@ async function saveDB(){
   try{
     await fetch(WEB_APP_URL, {
       method: "POST",
-      mode: "no-cors", // ใช้ no-cors สำหรับ Google Apps Script Web App แบบส่งปกติ
+      mode: "no-cors", 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "save", players: db.players, records: db.records })
     });
-    // เนื่องจากโหมด no-cors จะไม่ได้รับ response กลับมา แต่ส่งสำเร็จ จึงให้ดีเลย์เล็กน้อยก่อนปิดหน้าโหลดเพื่อความชัวร์
-    setTimeout(() => { toggleLoading(false); }, 500);
+    
+    // เนื่องจากโหมด no-cors จะไม่รับข้อมูลตอบกลับ เพื่อความแม่นยำให้ดึงข้อมูลชุดใหม่มาอัปเดตหน้าจอทันที
+    setTimeout(async () => {
+      try {
+        const response = await fetch(WEB_APP_URL);
+        if(response.ok) {
+          const resData = await response.json();
+          db.players = resData.players || [];
+          db.records = resData.records || [];
+        }
+      } catch(err) { console.error(err); }
+      
+      toggleLoading(false);
+      buildMonthOptions();
+      renderPlayers();
+      renderRecent();
+      renderHistory();
+      renderDash();
+    }, 800);
   }catch(e){
     console.error("บันทึกข้อมูลลง Google Sheets ล้มเหลว:", e);
     toggleLoading(false);
@@ -332,6 +349,7 @@ async function addPlayer(){
 async function removePlayer(id){
   if(!confirm('ลบผู้เล่นนี้?'))return;
   db.players=db.players.filter(p=>p.id!==id);
+  db.records=db.records.filter(r=>r.playerId!==id); // ลบประวัติของคนที่ถูกลบด้วย
   renderPlayers();
   await saveDB();
 }
@@ -457,7 +475,6 @@ function renderDash(){
   document.getElementById('monthly-legend').innerHTML=allPlayers.map((p,i)=>`<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:${palette[i]}"></span>${p}</span>`).join('');
 }
 
-// เริ่มต้นดาวน์โหลดฐานข้อมูลทันทีเมื่อเปิดเว็บ
 loadDB();
 </script>
 </body>
