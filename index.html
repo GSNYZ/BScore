@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบบันทึกคะแนนแบดมินตัน</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --border-radius-md: 6px;
+      --border-radius-lg: 12px;
+      --color-background-primary: #ffffff;
+      --color-background-secondary: #f8f9fa;
+      --color-text-primary: #212529;
+      --color-text-secondary: #495057;
+      --color-text-tertiary: #6c757d;
+      --color-text-danger: #dc3545;
+      --color-border-secondary: #dee2e6;
+      --color-border-tertiary: #edf2f7;
+    }
+    
+    /* สไตล์รองรับ Dark Mode เบื้องต้นตาม Media Query ของเครื่องผู้ใช้ */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --color-background-primary: #1a1d20;
+        --color-background-secondary: #111315;
+        --color-text-primary: #f8f9fa;
+        --color-text-secondary: #dee2e6;
+        --color-text-tertiary: #adb5bd;
+        --color-border-secondary: #343a40;
+        --color-border-tertiary: #2b3035;
+      }
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Thonburi, sans-serif;
+      background: var(--color-background-secondary);
+      color: var(--color-text-primary);
+      padding: 0 1rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    .hdr{background:#534AB7;border-radius:var(--border-radius-lg);padding:1.25rem 1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between}
+    .hdr-title{font-size:18px;font-weight:500;color:#fff}
+    .hdr-sub{font-size:12px;color:#AFA9EC;margin-top:2px}
+    .hdr-badge{background:#3C3489;color:#CECBF6;font-size:11px;padding:4px 10px;border-radius:20px}
+    .nav{display:flex;gap:6px;margin-bottom:1.5rem;flex-wrap:wrap}
+    .nb{border:none;border-radius:var(--border-radius-md);padding:8px 14px;font-size:13px;cursor:pointer;background:var(--color-background-secondary);color:var(--color-text-secondary);transition:all .13s;display:flex;align-items:center;gap:6px}
+    .nb:hover{background:var(--color-background-primary);color:var(--color-text-primary)}
+    .nb.on{background:#534AB7;color:#fff}
+    .nb i{font-size:15px}
+    .pane{display:none}.pane.on{display:block}
+    .g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:1.25rem}
+    .g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    @media (max-width: 768px) {
+      .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .g2 { grid-template-columns: 1fr; }
+    }
+    .sc{border-radius:var(--border-radius-lg);padding:1rem 1.25rem;display:flex;flex-direction:column;gap:6px}
+    .sc-label{font-size:11px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;opacity:.8}
+    .sc-val{font-size:24px;font-weight:500;line-height:1}
+    .sc-sub{font-size:11px;opacity:.7}
+    .sc-purple{background:#EEEDFE;color:#3C3489}.sc-purple .sc-label{color:#534AB7}
+    .sc-teal{background:#E1F5EE;color:#085041}.sc-teal .sc-label{color:#0F6E56}
+    .sc-amber{background:#FAEEDA;color:#633806}.sc-amber .sc-label{color:#854F0B}
+    .sc-blue{background:#E6F1FB;color:#0C447C}.sc-blue .sc-label{color:#185FA5}
+    .card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem;margin-bottom:1rem}
+    .card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+    .card-title{font-size:12px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--color-text-secondary)}
+    .chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
+    .chip-purple{background:#EEEDFE;color:#534AB7}
+    .chip-teal{background:#E1F5EE;color:#0F6E56}
+    .chip-amber{background:#FAEEDA;color:#854F0B}
+    .chip-coral{background:#FAECE7;color:#993C1D}
+    .chip-blue{background:#E6F1FB;color:#185FA5}
+    input,select{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:8px 10px;font-size:13px;color:var(--color-text-primary);width:100%}
+    input:focus,select:focus{outline:none;border-color:#7F77DD;box-shadow:0 0 0 2px #EEEDFE}
+    .btn{border-radius:var(--border-radius-md);padding:8px 14px;font-size:13px;cursor:pointer;transition:all .12s;border:none;display:inline-flex;align-items:center;gap:6px}
+    .btn-primary{background:#534AB7;color:#fff}.btn-primary:hover{background:#3C3489}
+    .btn-ghost{background:var(--color-background-secondary);color:var(--color-text-secondary);border:0.5px solid var(--color-border-tertiary)}.btn-ghost:hover{color:var(--color-text-danger);background:#FCEBEB}
+    .btn-outline{background:transparent;color:var(--color-text-secondary);border:0.5px solid var(--color-border-secondary)}.btn-outline:hover{background:var(--color-background-secondary)}
+    table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+    th{font-size:11px;font-weight:500;color:var(--color-text-tertiary);letter-spacing:.05em;text-transform:uppercase;padding:0 10px 10px;text-align:left;border-bottom:0.5px solid var(--color-border-tertiary)}
+    td{padding:10px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);vertical-align:middle}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:var(--color-background-secondary)}
+    .av{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0}
+    .av-p{background:#EEEDFE;color:#3C3489}
+    .av-t{background:#E1F5EE;color:#085041}
+    .av-a{background:#FAEEDA;color:#633806}
+    .av-b{background:#E6F1FB;color:#0C447C}
+    .av-c{background:#FAECE7;color:#712B13}
+    .bar-bg{height:6px;background:var(--color-background-secondary);border-radius:3px;overflow:hidden;width:100%}
+    .bar-fill{height:6px;border-radius:3px;background:#534AB7}
+    .rank-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+    .rank-row:last-child{border-bottom:none}
+    .rnum{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0}
+    .rnum-1{background:#FAEEDA;color:#633806}
+    .rnum-2{background:#F1EFE8;color:#444441}
+    .rnum-3{background:#FAECE7;color:#712B13}
+    .rnum-n{background:var(--color-background-secondary);color:var(--color-text-secondary)}
+    .pill-row{display:flex;flex-wrap:wrap;gap:6px}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:0.5px solid var(--color-border-tertiary);border-radius:20px;padding:5px 12px;font-size:12px;background:var(--color-background-secondary)}
+    .pill-x{cursor:pointer;color:var(--color-text-tertiary);font-size:15px;line-height:1}
+    .pill-x:hover{color:#E24B4A}
+    .fg{flex:1;min-width:110px}
+    .flabel{font-size:12px;color:var(--color-text-secondary);margin-bottom:4px}
+    .frow{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+    .flash{padding:8px 12px;border-radius:var(--border-radius-md);font-size:12px;margin-bottom:12px;display:none;background:#EEEDFE;color:#3C3489}
+    .empty{padding:2.5rem;text-align:center;font-size:13px;color:var(--color-text-tertiary)}
+  </style>
+</head>
+<body>
+
+<h2 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">ระบบบันทึกคะแนนแบดมินตัน</h2>
+
+<div style="padding:1.5rem 0 0">
+  <div class="hdr">
+    <div>
+      <div class="hdr-title"><i class="ti ti-feather" aria-hidden="true" style="font-size:18px;margin-right:8px"></i>Badminton Tracker</div>
+      <div class="hdr-sub">บันทึกคะแนนรายสัปดาห์ · สรุปคะแนนสะสมรายเดือน</div>
+    </div>
+    <div id="hdr-month" class="hdr-badge"></div>
+  </div>
+
+  <div class="nav">
+    <button class="nb on" onclick="go('dash')"><i class="ti ti-layout-dashboard"></i>แดชบอร์ด</button>
+    <button class="nb" onclick="go('record')"><i class="ti ti-plus"></i>บันทึกคะแนน</button>
+    <button class="nb" onclick="go('history')"><i class="ti ti-list-details"></i>ประวัติ</button>
+    <button class="nb" onclick="go('players')"><i class="ti ti-users"></i>ผู้เล่น</button>
+  </div>
+
+  <div id="pane-dash" class="pane on">
+    <div class="g4" id="dash-stats"></div>
+    <div class="g2" style="margin-bottom:1rem">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-hdr"><span class="card-title">อันดับ</span><span id="rank-chip" class="chip chip-purple"></span></div>
+        <div id="dash-rank"></div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="card-hdr"><span class="card-title">คะแนนรายสัปดาห์</span><span class="chip chip-teal">8 สัปดาห์ล่าสุด</span></div>
+        <div style="position:relative;height:188px"><canvas id="chart-weekly" role="img" aria-label="กราฟเส้นคะแนนรายสัปดาห์">คะแนนรายสัปดาห์</canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-title">คะแนนสะสมรายเดือน</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div id="monthly-legend" style="display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--color-text-secondary)"></div>
+          <select id="dash-sel-month" onchange="renderDash()" style="width:auto;font-size:12px;padding:4px 8px"><option value="">ทุกเดือน</option></select>
+        </div>
+      </div>
+      <div style="position:relative;height:200px"><canvas id="chart-monthly" role="img" aria-label="กราฟคะแนนสะสมรายเดือน">คะแนนสะสม</canvas></div>
+    </div>
+  </div>
+
+  <div id="pane-record" class="pane">
+    <div id="flash-rec" class="flash"></div>
+    <div class="card">
+      <div class="card-hdr"><span class="card-title">เพิ่มผลการแข่งขัน</span><span class="chip chip-purple"><i class="ti ti-plus" style="font-size:11px"></i>ใหม่</span></div>
+      <div class="frow" style="margin-bottom:12px">
+        <div class="fg"><div class="flabel">สัปดาห์</div><input type="week" id="inp-week"></div>
+        <div class="fg"><div class="flabel">ผู้เล่น</div><select id="inp-player"><option value="">เลือกผู้เล่น</option></select></div>
+      </div>
+      <div class="frow" style="margin-bottom:16px">
+        <div class="fg"><div class="flabel">คะแนน (แต้ม)</div><input type="number" id="inp-score" min="0" placeholder="0"></div>
+        <div class="fg"><div class="flabel">หมายเหตุ</div><input type="text" id="inp-note" placeholder="ไม่บังคับ"></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="addRecord()"><i class="ti ti-check" style="font-size:14px"></i>บันทึก</button>
+        <button class="btn btn-outline" onclick="clearForm()">ล้าง</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><span class="card-title">บันทึกล่าสุด</span><span class="chip chip-teal">8 รายการ</span></div>
+      <div id="rec-recent"></div>
+    </div>
+  </div>
+
+  <div id="pane-history" class="pane">
+    <div class="card" style="padding:.85rem 1.25rem;margin-bottom:1rem">
+      <div class="frow">
+        <div class="fg"><div class="flabel">กรองตามผู้เล่น</div><select id="flt-player" onchange="renderHistory()"><option value="">ทั้งหมด</option></select></div>
+        <div class="fg"><div class="flabel">กรองตามเดือน</div><input type="month" id="flt-month" oninput="renderHistory()"></div>
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden"><div id="hist-body"></div></div>
+  </div>
+
+  <div id="pane-players" class="pane">
+    <div class="card">
+      <div class="card-hdr"><span class="card-title">เพิ่มผู้เล่น</span></div>
+      <div class="frow">
+        <div class="fg"><input type="text" id="inp-pname" placeholder="ชื่อผู้เล่น" onkeydown="if(event.key==='Enter')addPlayer()"></div>
+        <button class="btn btn-primary" onclick="addPlayer()"><i class="ti ti-user-plus" style="font-size:14px"></i>เพิ่ม</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><span class="card-title">รายชื่อผู้เล่น</span><span id="p-count-chip" class="chip chip-purple">0 คน</span></div>
+      <div id="p-list" class="pill-row"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+let db={players:[],records:[]};
+let chartW=null,chartM=null;
+const palette=['#534AB7','#1D9E75','#D85A30','#378ADD','#D4537E'];
+const avCls=['av-p','av-t','av-a','av-b','av-c'];
+const chipCls=['chip-purple','chip-teal','chip-amber','chip-blue','chip-coral'];
+
+// ส่วนจำลอง localStorage เผื่อกรณีรันบนระบบที่ไม่มี window.storage ดั้งเดิม
+if (!window.storage) {
+  window.storage = {
+    get: async (key) => ({ value: localStorage.getItem(key) }),
+    set: async (key, val) => localStorage.setItem(key, val)
+  };
+}
+
+async function loadDB(){
+  try{const r=await window.storage.get('badminton_db');if(r&&r.value)db=JSON.parse(r.value);}catch(e){}
+  init();
+}
+async function saveDB(){try{await window.storage.set('badminton_db',JSON.stringify(db));}catch(e){}}
+
+function init(){
+  const now=new Date();
+  const ym=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('hdr-month').textContent=monthLabel(ym);
+  setWeek();buildMonthOptions();renderPlayers();renderRecent();renderHistory();renderDash();
+}
+
+function go(p){
+  document.querySelectorAll('.nb').forEach((b,i)=>b.classList.toggle('on',['dash','record','history','players'][i]===p));
+  document.querySelectorAll('.pane').forEach(x=>x.classList.remove('on'));
+  document.getElementById('pane-'+p).classList.add('on');
+  if(p==='dash')renderDash();
+}
+
+function setWeek(){
+  const now=new Date();const y=now.getFullYear();
+  const s=new Date(y,0,1);const d=Math.floor((now-s)/864e5);
+  const w=Math.ceil((d+s.getDay()+1)/7);
+  document.getElementById('inp-week').value=`${y}-W${String(w).padStart(2,'0')}`;
+}
+
+function weekToYM(w){
+  if(!w)return'';const[y,wk]=w.split('-W');
+  const d=new Date(Number(y),0,1+(parseInt(wk)-1)*7);
+  return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+function monthLabel(ym){
+  if(!ym)return'';const[y,m]=ym.split('-');
+  const mn=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return`${mn[+m-1]} ${+y+543}`;
+}
+
+function fmtWeek(w){if(!w)return'-';const[y,wk]=w.split('-W');return`สัปดาห์ ${+wk}/${y}`;}
+
+function avIdx(name){
+  const p=db.players.find(x=>x.name===name);
+  return p?db.players.indexOf(p)%5:0;
+}
+
+function buildMonthOptions(){
+  const months=[...new Set(db.records.map(r=>weekToYM(r.week)))].sort().reverse();
+  const sel=document.getElementById('dash-sel-month');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">ทุกเดือน</option>'+months.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join('');
+  sel.value=cur;
+}
+
+function renderPlayers(){
+  const list=document.getElementById('p-list');
+  document.getElementById('p-count-chip').textContent=`${db.players.length} คน`;
+  ['inp-player','flt-player'].forEach((id,i)=>{
+    const el=document.getElementById(id);const cur=el.value;
+    el.innerHTML=(i===0?'<option value="">เลือกผู้เล่น</option>':'<option value="">ทั้งหมด</option>')+
+      db.players.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+    el.value=cur;
+  });
+  list.innerHTML=db.players.length
+    ?db.players.map((p,i)=>`<span class="pill"><span class="av ${avCls[i%5]}" style="width:22px;height:22px;font-size:10px">${p.name.slice(0,2)}</span>${p.name}<span class="pill-x" onclick="removePlayer(${p.id})">×</span></span>`).join('')
+    :'<span style="font-size:13px;color:var(--color-text-tertiary)">ยังไม่มีผู้เล่น</span>';
+}
+
+function addPlayer(){
+  const n=document.getElementById('inp-pname').value.trim();
+  if(!n||db.players.find(p=>p.name===n))return;
+  db.players.push({id:Date.now(),name:n});
+  document.getElementById('inp-pname').value='';
+  saveDB();renderPlayers();
+}
+
+function removePlayer(id){
+  if(!confirm('ลบผู้เล่นนี้?'))return;
+  db.players=db.players.filter(p=>p.id!==id);saveDB();renderPlayers();
+}
+
+function flash(id,msg){
+  const el=document.getElementById(id);el.textContent=msg;el.style.display='block';
+  setTimeout(()=>el.style.display='none',2400);
+}
+
+function addRecord(){
+  const week=document.getElementById('inp-week').value;
+  const pid=Number(document.getElementById('inp-player').value);
+  const score=Number(document.getElementById('inp-score').value);
+  const note=document.getElementById('inp-note').value.trim();
+  if(!week||!pid||document.getElementById('inp-score').value==='')return;
+  const p=db.players.find(x=>x.id===pid);
+  db.records.push({id:Date.now(),week,playerId:pid,playerName:p.name,score,note});
+  buildMonthOptions();saveDB();renderRecent();renderDash();
+  flash('flash-rec',`บันทึกแล้ว · ${p.name} ได้ ${score} แต้ม สัปดาห์ ${fmtWeek(week)}`);
+  document.getElementById('inp-score').value='';document.getElementById('inp-note').value='';
+}
+
+function clearForm(){setWeek();['inp-player','inp-score','inp-note'].forEach(id=>document.getElementById(id).value='');}
+
+function delRecord(id){
+  if(!confirm('ลบรายการนี้?'))return;
+  db.records=db.records.filter(r=>r.id!==id);saveDB();renderRecent();renderHistory();renderDash();buildMonthOptions();
+}
+
+function renderRecent(){
+  const el=document.getElementById('rec-recent');
+  const rows=[...db.records].sort((a,b)=>b.id-a.id).slice(0,8);
+  if(!rows.length){el.innerHTML='<div class="empty">ยังไม่มีการบันทึก</div>';return;}
+  el.innerHTML=`<table><thead><tr><th style="width:30%">สัปดาห์</th><th>ผู้เล่น</th><th style="text-align:right;width:15%">คะแนน</th><th style="width:20%">หมายเหตุ</th><th style="width:32px"></th></tr></thead><tbody>
+  ${rows.map(r=>{const ci=chipCls[avIdx(r.playerName)];return`<tr>
+    <td><span class="chip ${ci}">${fmtWeek(r.week)}</span></td>
+    <td><div style="display:flex;align-items:center;gap:8px"><span class="av ${avCls[avIdx(r.playerName)]}">${r.playerName.slice(0,2)}</span>${r.playerName}</div></td>
+    <td style="text-align:right;font-weight:500">${r.score}</td>
+    <td style="font-size:12px;color:var(--color-text-tertiary)">${r.note||'—'}</td>
+    <td><button class="btn btn-ghost" style="padding:4px 8px;font-size:12px" onclick="delRecord(${r.id})" aria-label="ลบ"><i class="ti ti-trash" style="font-size:13px"></i></button></td>
+  </tr>`;}).join('')}</tbody></table>`;
+}
+
+function renderHistory(){
+  const el=document.getElementById('hist-body');
+  const pid=document.getElementById('flt-player').value;
+  const mon=document.getElementById('flt-month').value;
+  let rows=[...db.records].sort((a,b)=>b.id-a.id);
+  if(pid)rows=rows.filter(r=>String(r.playerId)===pid);
+  if(mon)rows=rows.filter(r=>weekToYM(r.week)===mon);
+  if(!rows.length){el.innerHTML='<div class="empty">ไม่พบข้อมูล</div>';return;}
+  el.innerHTML=`<table><thead><tr><th style="padding-left:16px;width:26%">สัปดาห์</th><th style="width:16%">เดือน</th><th>ผู้เล่น</th><th style="text-align:right;width:14%">คะแนน</th><th style="width:20%;padding-right:16px">หมายเหตุ</th><th style="width:32px"></th></tr></thead><tbody>
+  ${rows.map(r=>{const ai=avIdx(r.playerName);return`<tr>
+    <td style="padding-left:16px"><span class="chip ${chipCls[ai]}">${fmtWeek(r.week)}</span></td>
+    <td style="font-size:12px;color:var(--color-text-tertiary)">${monthLabel(weekToYM(r.week))}</td>
+    <td><div style="display:flex;align-items:center;gap:8px"><span class="av ${avCls[ai]}">${r.playerName.slice(0,2)}</span>${r.playerName}</div></td>
+    <td style="text-align:right;font-weight:500">${r.score}</td>
+    <td style="font-size:12px;color:var(--color-text-tertiary);padding-right:16px">${r.note||'—'}</td>
+    <td><button class="btn btn-ghost" style="padding:4px 8px;font-size:12px" onclick="delRecord(${r.id})" aria-label="ลบ"><i class="ti ti-trash" style="font-size:13px"></i></button></td>
+  </tr>`;}).join('')}</tbody></table>`;
+}
+
+function renderDash(){
+  const mon=document.getElementById('dash-sel-month').value;
+  const rows=mon?db.records.filter(r=>weekToYM(r.week)===mon):db.records;
+  const totals={};const weekSets={};
+  rows.forEach(r=>{totals[r.playerName]=(totals[r.playerName]||0)+r.score;if(!weekSets[r.playerName])weekSets[r.playerName]=new Set();weekSets[r.playerName].add(r.week);});
+  const sorted=Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+  const weeks=[...new Set(rows.map(r=>r.week))].length;
+  const total=sorted.reduce((s,[,v])=>s+v,0);
+  const top=sorted[0]?sorted[0][0]:'—';
+
+  document.getElementById('dash-stats').innerHTML=`
+    <div class="sc sc-purple"><div class="sc-label">ผู้เล่น</div><div class="sc-val">${db.players.length}</div><div class="sc-sub">คนทั้งหมด</div></div>
+    <div class="sc sc-teal"><div class="sc-label">สัปดาห์</div><div class="sc-val">${weeks}</div><div class="sc-sub">ที่มีการบันทึก</div></div>
+    <div class="sc sc-amber"><div class="sc-label">คะแนนรวม</div><div class="sc-val">${total}</div><div class="sc-sub">${mon?monthLabel(mon):'ทั้งหมด'}</div></div>
+    <div class="sc sc-blue"><div class="sc-label">อันดับ 1</div><div class="sc-val" style="font-size:15px;margin-top:2px">${top}</div><div class="sc-sub">${sorted[0]?sorted[0][1]+' แต้ม':''}</div></div>`;
+
+  document.getElementById('rank-chip').textContent=mon?monthLabel(mon):'ทุกเดือน';
+  const rankEl=document.getElementById('dash-rank');
+  if(!sorted.length){rankEl.innerHTML='<div class="empty">ยังไม่มีข้อมูล</div>';}
+  else{
+    const best=sorted[0][1];
+    rankEl.innerHTML=sorted.slice(0,6).map(([name,score],i)=>`
+      <div class="rank-row">
+        <span class="${i<3?'rnum rnum-'+(i+1):'rnum rnum-n'}">${i+1}</span>
+        <span class="av ${avCls[avIdx(name)]}">${name.slice(0,2)}</span>
+        <span style="flex:1;font-size:13px">${name}</span>
+        <div style="display:flex;align-items:center;gap:10px;min-width:90px">
+          <div class="bar-bg" style="flex:1"><div class="bar-fill" style="width:${Math.round(score/best*100)}%;background:${palette[avIdx(name)]}"></div></div>
+          <span style="font-size:13px;font-weight:500;min-width:26px;text-align:right">${score}</span>
+        </div>
+      </div>`).join('');
+  }
+
+  const isDark=matchMedia('(prefers-color-scheme:dark)').matches;
+  const gridColor=isDark?'rgba(255,255,255,.07)':'rgba(0,0,0,.07)';
+  const textColor=isDark?'#777':'#bbb';
+
+  const weekData={};
+  db.records.forEach(r=>{if(!weekData[r.week])weekData[r.week]=0;weekData[r.week]+=r.score;});
+  const wKeys=Object.keys(weekData).sort().slice(-8);
+  const wVals=wKeys.map(k=>weekData[k]);
+  const wLabels=wKeys.map(k=>{const[,wk]=k.split('-W');return`W${+wk}`;});
+
+  if(chartW)chartW.destroy();
+  chartW=new Chart(document.getElementById('chart-weekly').getContext('2d'),{type:'line',data:{labels:wLabels,datasets:[{label:'คะแนนรวม',data:wVals,borderColor:'#534AB7',backgroundColor:'rgba(83,74,183,.1)',borderWidth:2,pointRadius:4,pointBackgroundColor:'#534AB7',pointBorderColor:'#fff',pointBorderWidth:1.5,tension:.35,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:textColor,font:{size:10}},grid:{display:false}},y:{ticks:{color:textColor,font:{size:10}},grid:{color:gridColor},beginAtZero:true}}}});
+
+  const monthData={};
+  db.records.forEach(r=>{const m=weekToYM(r.week);if(!monthData[m])monthData[m]={};monthData[m][r.playerName]=(monthData[m][r.playerName]||0)+r.score;});
+  const mKeys=Object.keys(monthData).sort().slice(-6);
+  const mLabels=mKeys.map(m=>monthLabel(m));
+  const allPlayers=[...new Set(db.records.map(r=>r.playerName))].slice(0,5);
+  const datasets=allPlayers.map((p,i)=>({label:p,data:mKeys.map(m=>monthData[m]?.[p]||0),backgroundColor:palette[i],borderRadius:4,borderSkipped:false}));
+
+  if(chartM)chartM.destroy();
+  chartM=new Chart(document.getElementById('chart-monthly').getContext('2d'),{type:'bar',data:{labels:mLabels,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:textColor,font:{size:10}},grid:{display:false},stacked:true},y:{ticks:{color:textColor,font:{size:10}},grid:{color:gridColor},stacked:true,beginAtZero:true}}}});
+
+  document.getElementById('monthly-legend').innerHTML=allPlayers.map((p,i)=>`<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:${palette[i]}"></span>${p}</span>`).join('');
+}
+
+loadDB();
+</script>
+</body>
+</html>
