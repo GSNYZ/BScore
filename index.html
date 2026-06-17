@@ -21,7 +21,6 @@
       --color-border-tertiary: #edf2f7;
     }
     
-    /* สไตล์รองรับ Dark Mode เบื้องต้นตาม Media Query ของเครื่องผู้ใช้ */
     @media (prefers-color-scheme: dark) {
       :root {
         --color-background-primary: #1a1d20;
@@ -43,7 +42,6 @@
       margin: 0 auto;
     }
 
-    *{box-sizing:border-box;margin:0;padding:0}
     .hdr{background:#534AB7;border-radius:var(--border-radius-lg);padding:1.25rem 1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between}
     .hdr-title{font-size:18px;font-weight:500;color:#fff}
     .hdr-sub{font-size:12px;color:#AFA9EC;margin-top:2px}
@@ -112,9 +110,17 @@
     .frow{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
     .flash{padding:8px 12px;border-radius:var(--border-radius-md);font-size:12px;margin-bottom:12px;display:none;background:#EEEDFE;color:#3C3489}
     .empty{padding:2.5rem;text-align:center;font-size:13px;color:var(--color-text-tertiary)}
+    
+    /* สไตล์เพิ่มเติมสำหรับสถานะกำลังโหลดข้อมูล */
+    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 9999; color: white; font-size: 16px; border-radius: inherit; }
+    .loading-box { background: var(--color-background-primary); color: var(--color-text-primary); padding: 20px 40px; border-radius: var(--border-radius-lg); box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; }
   </style>
 </head>
 <body>
+
+<div id="loading-view" class="loading-overlay" style="display: none;">
+  <div class="loading-box"><i class="ti ti-loader-quarter ti-spin" style="font-size: 20px; color: #534AB7;"></i> กำลังเชื่อมต่อ Google Sheets...</div>
+</div>
 
 <h2 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">ระบบบันทึกคะแนนแบดมินตัน</h2>
 
@@ -208,25 +214,49 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
+// นำ URL ของ Web App ที่ได้จากการ Deploy ใน Google Apps Script มาใส่ตรงนี้ครับ
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzwTpRUe9srWEjwaqgQXEy0ra3tNo4Pa6rzPwyBurIF6eLcBuBMpz4JSsX9oGv1mu_xpw/exec"; 
+
 let db={players:[],records:[]};
 let chartW=null,chartM=null;
 const palette=['#534AB7','#1D9E75','#D85A30','#378ADD','#D4537E'];
 const avCls=['av-p','av-t','av-a','av-b','av-c'];
 const chipCls=['chip-purple','chip-teal','chip-amber','chip-blue','chip-coral'];
 
-// ส่วนจำลอง localStorage เผื่อกรณีรันบนระบบที่ไม่มี window.storage ดั้งเดิม
-if (!window.storage) {
-  window.storage = {
-    get: async (key) => ({ value: localStorage.getItem(key) }),
-    set: async (key, val) => localStorage.setItem(key, val)
-  };
+function toggleLoading(show) {
+  document.getElementById('loading-view').style.display = show ? 'flex' : 'none';
 }
 
 async function loadDB(){
-  try{const r=await window.storage.get('badminton_db');if(r&&r.value)db=JSON.parse(r.value);}catch(e){}
+  toggleLoading(true);
+  try{
+    const response = await fetch(WEB_APP_URL);
+    if(response.ok) {
+      db = await response.json();
+    }
+  }catch(e){
+    console.error("โหลดข้อมูลจาก Google Sheets ไม่สำเร็จ ลิงก์อาจไม่ถูกต้อง:", e);
+  }
+  toggleLoading(false);
   init();
 }
-async function saveDB(){try{await window.storage.set('badminton_db',JSON.stringify(db));}catch(e){}}
+
+async function saveDB(){
+  toggleLoading(true);
+  try{
+    await fetch(WEB_APP_URL, {
+      method: "POST",
+      mode: "no-cors", // ใช้ no-cors สำหรับ Google Apps Script Web App แบบส่งปกติ
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "save", players: db.players, records: db.records })
+    });
+    // เนื่องจากโหมด no-cors จะไม่ได้รับ response กลับมา แต่ส่งสำเร็จ จึงให้ดีเลย์เล็กน้อยก่อนปิดหน้าโหลดเพื่อความชัวร์
+    setTimeout(() => { toggleLoading(false); }, 500);
+  }catch(e){
+    console.error("บันทึกข้อมูลลง Google Sheets ล้มเหลว:", e);
+    toggleLoading(false);
+  }
+}
 
 function init(){
   const now=new Date();
@@ -290,17 +320,20 @@ function renderPlayers(){
     :'<span style="font-size:13px;color:var(--color-text-tertiary)">ยังไม่มีผู้เล่น</span>';
 }
 
-function addPlayer(){
+async function addPlayer(){
   const n=document.getElementById('inp-pname').value.trim();
   if(!n||db.players.find(p=>p.name===n))return;
   db.players.push({id:Date.now(),name:n});
   document.getElementById('inp-pname').value='';
-  saveDB();renderPlayers();
+  renderPlayers();
+  await saveDB();
 }
 
-function removePlayer(id){
+async function removePlayer(id){
   if(!confirm('ลบผู้เล่นนี้?'))return;
-  db.players=db.players.filter(p=>p.id!==id);saveDB();renderPlayers();
+  db.players=db.players.filter(p=>p.id!==id);
+  renderPlayers();
+  await saveDB();
 }
 
 function flash(id,msg){
@@ -308,7 +341,7 @@ function flash(id,msg){
   setTimeout(()=>el.style.display='none',2400);
 }
 
-function addRecord(){
+async function addRecord(){
   const week=document.getElementById('inp-week').value;
   const pid=Number(document.getElementById('inp-player').value);
   const score=Number(document.getElementById('inp-score').value);
@@ -316,16 +349,20 @@ function addRecord(){
   if(!week||!pid||document.getElementById('inp-score').value==='')return;
   const p=db.players.find(x=>x.id===pid);
   db.records.push({id:Date.now(),week,playerId:pid,playerName:p.name,score,note});
-  buildMonthOptions();saveDB();renderRecent();renderDash();
+  buildMonthOptions();
+  renderRecent();renderDash();
   flash('flash-rec',`บันทึกแล้ว · ${p.name} ได้ ${score} แต้ม สัปดาห์ ${fmtWeek(week)}`);
   document.getElementById('inp-score').value='';document.getElementById('inp-note').value='';
+  await saveDB();
 }
 
 function clearForm(){setWeek();['inp-player','inp-score','inp-note'].forEach(id=>document.getElementById(id).value='');}
 
-function delRecord(id){
+async function delRecord(id){
   if(!confirm('ลบรายการนี้?'))return;
-  db.records=db.records.filter(r=>r.id!==id);saveDB();renderRecent();renderHistory();renderDash();buildMonthOptions();
+  db.records=db.records.filter(r=>r.id!==id);
+  renderRecent();renderHistory();renderDash();buildMonthOptions();
+  await saveDB();
 }
 
 function renderRecent(){
@@ -420,6 +457,7 @@ function renderDash(){
   document.getElementById('monthly-legend').innerHTML=allPlayers.map((p,i)=>`<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:${palette[i]}"></span>${p}</span>`).join('');
 }
 
+// เริ่มต้นดาวน์โหลดฐานข้อมูลทันทีเมื่อเปิดเว็บ
 loadDB();
 </script>
 </body>
